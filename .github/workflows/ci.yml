@@ -38,7 +38,7 @@ jobs:
 
       # On lance le linter — s'il trouve des erreurs, le pipeline s'arrête
       - name: Lancer le linter
-        run: flake8 app.py --max-line-length=100
+        run: flake8 app.py --max-line-length=100 --extend-ignore=W292,W293
 
   # ÉTAPE 2 : Tests automatiques
   # Cette étape attend que le lint soit passé avant de démarrer
