@@ -1,0 +1,27 @@
+# Docker Compose orchestre le lancement de tous les services ensemble
+# Chez Adeo : Kubernetes fait la même chose mais à grande échelle en production
+
+version: "3.8"
+
+services:
+
+  # Notre API de remédiation automatique
+  # C'est le coeur du projet — l'équivalent simplifié d'Opstomation
+  api:
+    # On construit l'image depuis le Dockerfile dans le dossier courant
+    build: .
+
+    # On redirige le port 5000 de ta machine vers le port 5000 du conteneur
+    # Format : "port_machine:port_conteneur"
+    ports:
+      - "5000:5000"
+
+    # Si le conteneur plante, Docker le redémarre automatiquement
+    # Chez Adeo : Kubernetes fait pareil avec ses pods
+    restart: always
+
+    # Variables d'environnement — la config ne doit jamais être dans le code
+    # Chez Adeo : Ansible gère ce genre de config sur les vrais serveurs
+    environment:
+      - FLASK_ENV=production
+      - SERVICE_NAME=mini-opstomation
