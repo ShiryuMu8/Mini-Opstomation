@@ -49,3 +49,4 @@ def fix_incident(incident_id):
 if __name__ == "__main__":
     # 0.0.0.0 permet à Docker d'exposer le port vers l'extérieur
     app.run(host="0.0.0.0", port=5000)
+    
