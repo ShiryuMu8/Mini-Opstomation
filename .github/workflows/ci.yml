@@ -1,0 +1,91 @@
+# Ce fichier définit le pipeline CI/CD du projet
+# Chez Adeo : ArgoWorkflow fait la même chose mais sur Kubernetes
+# Ici on utilise GitHub Actions comme on l'a fait sur le projet jeux vidéo
+
+name: CI - Mini Opstomation
+
+on:
+  # Le pipeline se déclenche automatiquement sur chaque push et Pull Request
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  # On peut aussi le lancer manuellement depuis GitHub
+  workflow_dispatch:
+
+jobs:
+
+  # ÉTAPE 1 : Vérification de la qualité du code
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+
+    steps:
+      # On récupère le code du repo
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      # On installe Python
+      - name: Installer Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # On installe flake8 — l'outil qui vérifie le style du code Python
+      # Chez Adeo : on ne livre jamais du code mal formaté en production
+      - name: Installer flake8
+        run: pip install flake8
+
+      # On lance le linter — s'il trouve des erreurs, le pipeline s'arrête
+      - name: Lancer le linter
+        run: flake8 app.py --max-line-length=100
+
+  # ÉTAPE 2 : Tests automatiques
+  # Cette étape attend que le lint soit passé avant de démarrer
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # On installe les dépendances du projet
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      # On lance les tests pytest
+      # Si un test échoue, le pipeline s'arrête et le déploiement est bloqué
+      # Chez Adeo : on ne déploie jamais du code non testé
+      - name: Lancer les tests
+        run: pytest test_app.py -v
+
+  # ÉTAPE 3 : Construction de l'image Docker
+  # Cette étape attend que les tests soient passés
+  build:
+    name: Build Docker
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      # On construit l'image Docker pour vérifier qu'elle se build sans erreur
+      # Chez Adeo : l'image serait ensuite poussée sur un registry et déployée sur Kubernetes
+      - name: Build l'image Docker
+        run: docker build -t mini-opstomation .
+
+      # On vérifie que le conteneur démarre correctement
+      - name: Vérifier que le conteneur démarre
+        run: |
+          docker run -d -p 5000:5000 --name test-container mini-opstomation
+          sleep 3
+          curl http://localhost:5000/health
+          docker stop test-container
